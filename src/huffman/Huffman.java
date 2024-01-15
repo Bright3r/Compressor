@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import io.FileHandler;
+
 public class Huffman {
 
 	private Map<Character, Integer> createFrequencyTable(String data) {
@@ -72,6 +74,20 @@ public class Huffman {
 		return codeToChar;
 	}
 	
+	private void saveCodec(String encodedMsg, Map<String, String> decodingTable, String filePath) throws IOException {
+		File file = new File(filePath);
+		FileOutputStream fileStream = new FileOutputStream(file);
+		ObjectOutputStream objStream = new ObjectOutputStream(fileStream);
+		
+		objStream.writeObject(decodingTable);
+		
+		byte[] binary = FileHandler.binaryToBytes(encodedMsg);
+		objStream.writeObject(binary);
+		
+		objStream.close();
+		fileStream.close();
+	}
+	
 	/**
 	 * Encodes a given String using a Huffman Coding
 	 * 
@@ -79,7 +95,7 @@ public class Huffman {
 	 * @return the encoded string
 	 * @throws IOException 
 	 */
-	public void encode(String msg, String filePath) throws IOException {
+	public void encodeToFile(String msg, String filePath) throws IOException {
 		Map<Character, Integer> map = createFrequencyTable(msg);
 		Node tree = createHuffmanTree(map);
 		Map<Character, String> codes = getHuffmanCodes(tree);
@@ -101,14 +117,14 @@ public class Huffman {
 	 * @param encodedMsg the encoded message
 	 * @return the decoded string
 	 */
-	public String decode(String encodedMsg, Map<String, String> codeToChar) {
+	public String decode(String encodedMsg, Map<String, String> decodingTable) {
 		StringBuilder msg = new StringBuilder();
 		
 		int idx = 0;
 		StringBuilder currCode = new StringBuilder();
 		while (idx < encodedMsg.length()) {
 			currCode.append(encodedMsg.charAt(idx++));
-			String decodedChar = codeToChar.get(currCode.toString());
+			String decodedChar = decodingTable.get(currCode.toString());
 			
 			if (decodedChar != null) {
 				msg.append(decodedChar);
@@ -119,24 +135,23 @@ public class Huffman {
 		return msg.toString();
 	}
 	
-	private void saveCodec(String encodedMsg, Map<String, String> codeToChar, String filePath) throws IOException {
-		File file = new File(filePath);
-		FileOutputStream fileStream = new FileOutputStream(file);
-		ObjectOutputStream objStream = new ObjectOutputStream(fileStream);
-		
-		objStream.writeObject(codeToChar);
-		objStream.writeObject(encodedMsg);
-		objStream.close();
-		fileStream.close();
-	}
-	
-	private String readFile(String filePath) throws IOException, ClassNotFoundException {
+	/**
+	 * Decodes a given file into a String
+	 * 
+	 * @param filePath the path of the encoded file
+	 * @return a string representation of the decoded file
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	public String decodeFile(String filePath) throws IOException, ClassNotFoundException {
 		File file = new File(filePath);
 		FileInputStream fileStream = new FileInputStream(file);
 		ObjectInputStream objStream = new ObjectInputStream(fileStream);
 		
 		Map<String, String> codeToChar = (Map<String, String>) objStream.readObject();
-		String encodedMsg = (String) objStream.readObject();
+		byte[] encodedBytes = (byte[]) objStream.readObject();
+		String encodedMsg = FileHandler.bytesToString(encodedBytes);
+		
 		objStream.close();
 		fileStream.close();
 		
@@ -146,25 +161,35 @@ public class Huffman {
 	
 	
 	public static void main(String[] args) {
-		String data = "Hello World!";
-		
 		Huffman encoder = new Huffman();
-		String filePath = "C:/Users/chase/OneDrive/Desktop/Coding/Java/Compressor/test.txt";
-		
-//		try {
-//			encoder.encode(data, filePath);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		String filePath = "F:\\Coding\\Java\\encoding\\Compressor\\test_enc.txt";
 		
 		try {
-			String msg = encoder.readFile(filePath);
-			System.out.println(msg);
+			encoder.encodeToFile(test, filePath);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			String msg = encoder.decodeFile(filePath);
+			System.out.println(msg.equals(test));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
+	
+	
+	private static final String test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
+	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
+			+ "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
+	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
+			+ "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
+	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
+			+ "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
+	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
+			+ "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
+	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel.";
 	
 	
 	private class Node {
