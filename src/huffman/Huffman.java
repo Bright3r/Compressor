@@ -1,11 +1,16 @@
 package huffman;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
 public class Huffman {
-	private Map<String, String> codes;
 
 	private Map<Character, Integer> createFrequencyTable(String data) {
 		Map<Character, Integer> freqTable = new HashMap<>();
@@ -19,15 +24,7 @@ public class Huffman {
 	
 	private Node createHuffmanTree(Map<Character, Integer> freqTable) {
 		PriorityQueue<Node> minHeap = new PriorityQueue<>((a, b) -> {
-			if (a.frequency < b.frequency) {
-				return -1;
-			}
-			else if (a.frequency == b.frequency) {
-				return 0;
-			}
-			else {
-				return 1;
-			}
+			return a.frequency - b.frequency;
 		});
 		
 		// construct min heap from frequency table
@@ -36,7 +33,7 @@ public class Huffman {
 			minHeap.add(huffmanLeaf);
 		}
 		
-		// construct huffman tree
+		// construct Huffman tree
 		while (minHeap.size() > 1) {
 			Node node1 = minHeap.poll();
 			Node node2 = minHeap.poll();
@@ -53,12 +50,6 @@ public class Huffman {
 		Map<Character, String> codes = new HashMap<>();
 		codes = getHuffmanCodesR(root, codes, "0");
 		
-		Map<String, String> codesToChar = new HashMap<>();
-		for (char key : codes.keySet()) {
-			codesToChar.put(codes.get(key), Character.toString(key));
-		}
-		this.codes = codesToChar;
-		
 		return codes;
 	}
 	
@@ -73,42 +64,105 @@ public class Huffman {
 		return codes;
 	}
 	
-	public StringBuilder encode(String msg) {
+	private Map<String, String> invertHuffmanCodes(Map<Character, String> codes) {
+		Map<String, String> codeToChar = new HashMap<>();
+		for (char key : codes.keySet()) {
+			codeToChar.put(codes.get(key), Character.toString(key));
+		}
+		return codeToChar;
+	}
+	
+	/**
+	 * Encodes a given String using a Huffman Coding
+	 * 
+	 * @param msg the string to encode
+	 * @return the encoded string
+	 * @throws IOException 
+	 */
+	public void encode(String msg, String filePath) throws IOException {
 		Map<Character, Integer> map = createFrequencyTable(msg);
 		Node tree = createHuffmanTree(map);
 		Map<Character, String> codes = getHuffmanCodes(tree);
 		
-		StringBuilder res = new StringBuilder();
+		// create encoded message
+		StringBuilder encodedMsg = new StringBuilder();
 		for (char ch : msg.toCharArray()) {
-			res.append(codes.get(ch));
+			encodedMsg.append(codes.get(ch));
 		}
 		
-		return res;
+		// store codec
+		Map<String, String> decodingTable = invertHuffmanCodes(codes);
+		saveCodec(encodedMsg.toString(), decodingTable, filePath);
 	}
 	
-	public StringBuilder decode(StringBuilder encoded) {
+	/**
+	 * Decodes a given String given the corresponding Huffman Codes
+	 * 
+	 * @param encodedMsg the encoded message
+	 * @return the decoded string
+	 */
+	public String decode(String encodedMsg, Map<String, String> codeToChar) {
 		StringBuilder msg = new StringBuilder();
 		
-		String currCode = "";
-		int i = 0;
-		while (i < encoded.length()) {
-			currCode += encoded.charAt(i++);
-			String decodedChar = this.codes.get(currCode);
+		int idx = 0;
+		StringBuilder currCode = new StringBuilder();
+		while (idx < encodedMsg.length()) {
+			currCode.append(encodedMsg.charAt(idx++));
+			String decodedChar = codeToChar.get(currCode.toString());
+			
 			if (decodedChar != null) {
 				msg.append(decodedChar);
-				currCode = "";
+				currCode.delete(0, currCode.length());	// clear string builder
 			}
 		}
-		return msg;
+		
+		return msg.toString();
 	}
+	
+	private void saveCodec(String encodedMsg, Map<String, String> codeToChar, String filePath) throws IOException {
+		File file = new File(filePath);
+		FileOutputStream fileStream = new FileOutputStream(file);
+		ObjectOutputStream objStream = new ObjectOutputStream(fileStream);
+		
+		objStream.writeObject(codeToChar);
+		objStream.writeObject(encodedMsg);
+		objStream.close();
+		fileStream.close();
+	}
+	
+	private String readFile(String filePath) throws IOException, ClassNotFoundException {
+		File file = new File(filePath);
+		FileInputStream fileStream = new FileInputStream(file);
+		ObjectInputStream objStream = new ObjectInputStream(fileStream);
+		
+		Map<String, String> codeToChar = (Map<String, String>) objStream.readObject();
+		String encodedMsg = (String) objStream.readObject();
+		objStream.close();
+		fileStream.close();
+		
+		return decode(encodedMsg, codeToChar);
+	}
+	
+	
 	
 	public static void main(String[] args) {
 		String data = "Hello World!";
 		
-		Huffman encoder = new Huffman();		
-		StringBuilder res = encoder.encode(data);
-		System.out.println(res);
-		System.out.println(encoder.decode(res));
+		Huffman encoder = new Huffman();
+		String filePath = "C:/Users/chase/OneDrive/Desktop/Coding/Java/Compressor/test.txt";
+		
+//		try {
+//			encoder.encode(data, filePath);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+		
+		try {
+			String msg = encoder.readFile(filePath);
+			System.out.println(msg);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	
