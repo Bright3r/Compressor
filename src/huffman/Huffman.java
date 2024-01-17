@@ -2,6 +2,7 @@ package huffman;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -80,10 +81,12 @@ public class Huffman {
 		FileOutputStream fileStream = new FileOutputStream(file);
 		ObjectOutputStream objStream = new ObjectOutputStream(fileStream);
 		
-		objStream.writeObject(decodingTable);
+		objStream.writeObject(decodingTable);	// save map
 		
 		byte[] binary = FileHandler.binaryToBytes(encodedMsg);
-		objStream.writeObject(binary);
+		objStream.writeObject(binary);	// save encoded msg
+		
+		objStream.writeObject(encodedMsg.length());	// save msg length
 		
 		objStream.close();
 		fileStream.close();
@@ -118,11 +121,12 @@ public class Huffman {
 	 * @param encodedMsg the encoded message
 	 * @return the decoded string
 	 */
-	public String decode(String encodedMsg, Map<String, String> decodingTable) {
+	public String decode(String encodedMsg, int msgLength, Map<String, String> decodingTable) {
 		StringBuilder msg = new StringBuilder();
 		
 		int idx = 0;
 		StringBuilder currCode = new StringBuilder();
+		encodedMsg = encodedMsg.substring(0, msgLength);	// cut off extra 0s from encoded msg
 		while (idx < encodedMsg.length()) {
 			currCode.append(encodedMsg.charAt(idx++));
 			String decodedChar = decodingTable.get(currCode.toString());
@@ -149,57 +153,48 @@ public class Huffman {
 		FileInputStream fileStream = new FileInputStream(file);
 		ObjectInputStream objStream = new ObjectInputStream(fileStream);
 		
+		// read decoding table
 		Map<String, String> codeToChar = (Map<String, String>) objStream.readObject();
+		
+		// read encoded msg
 		byte[] encodedBytes = (byte[]) objStream.readObject();
 		String encodedMsg = FileHandler.bytesToBinary(encodedBytes);
+		
+		// read msg length
+		int msgLength = (Integer) objStream.readObject();
 		
 		objStream.close();
 		fileStream.close();
 		
-		return decode(encodedMsg, codeToChar);
+		return decode(encodedMsg, msgLength, codeToChar);
 	}
 	
 	
 	
 	public static void main(String[] args) {
 		Huffman encoder = new Huffman();
-		String filePath = "F:\\Coding\\Java\\encoding\\Compressor\\test_enc.txt";
+		String filePath = new File("test_enc.txt").getAbsolutePath();
+		String msg = "";
+		try {
+			msg = FileHandler.readFile("test.txt");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		
 		try {
-			encoder.encodeToFile(test, filePath);
+			encoder.encodeToFile(msg, filePath);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
 		try {
-			String msg = encoder.decodeFile(filePath);
-			System.out.println(msg.equals(test));
-//			System.out.println(msg);
+			String decodedMsg = encoder.decodeFile(filePath);
+			System.out.println(decodedMsg.equals(msg));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	
-	
-	private static final String test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "Vivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel."
-			+ "\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis imperdiet dui, vitae mollis nisi ultrices at. Maecenas pulvinar nibh id lobortis iaculis. Proin congue nulla arcu, ac consequat massa ultrices eget. Donec facilisis nibh non purus dapibus pellentesque. In posuere tellus id eros feugiat, vel pulvinar diam sodales. Sed lobortis nibh sed urna maximus, non luctus est ultricies. Pellentesque porttitor malesuada nulla et tempor."
-	        + "\nVivamus ligula odio, mollis et tellus viverra, euismod cursus nunc. Donec eu dignissim elit. Donec gravida eu purus a suscipit. Nunc eleifend convallis condimentum. Phasellus tincidunt, magna maximus faucibus bibendum, augue orci convallis lectus, id condimentum sem lacus ac sem. Quisque vitae rutrum felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam molestie feugiat urna, lobortis placerat urna gravida vel.";
 	
 	
 	private class Node {

@@ -1,5 +1,12 @@
 package io;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.Scanner;
+
 public class FileHandler {
 
 	public static byte[] binaryToBytes(String binaryStr) {
@@ -12,7 +19,6 @@ public class FileHandler {
 			}
 		}
 		
-		System.out.println(binaryStr);
 		return bytes;
 	}
 	
@@ -22,7 +28,21 @@ public class FileHandler {
 			String binaryStr = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
 	        str.append(binaryStr);
 		}
-		System.out.println(str);
+
+		return str.toString();
+	}
+	
+	public static String readFile(String filePath) throws FileNotFoundException {
+		File file = new File(new File(filePath).getAbsolutePath());
+		
+		FileReader fileReader = new FileReader(file);
+		Scanner scanner = new Scanner(fileReader);
+		
+		StringBuilder str = new StringBuilder();
+		while (scanner.hasNext()) {
+			str.append(scanner.nextLine());
+		}
+		
 		return str.toString();
 	}
 }
