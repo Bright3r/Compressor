@@ -2,7 +2,6 @@ package huffman;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -76,6 +75,34 @@ public class Huffman {
 		return codeToChar;
 	}
 	
+	/**
+	 * Encodes a given String using a Huffman Coding
+	 * 
+	 * @param msg the string to encode
+	 * @return the encoded string
+	 * @throws IOException 
+	 */
+	public void encodeStringToFile(String msg, String filePath) throws IOException {
+		Map<Character, Integer> map = createFrequencyTable(msg);
+		Node tree = createHuffmanTree(map);
+		Map<Character, String> codes = getHuffmanCodes(tree);
+		
+		// create encoded message
+		StringBuilder encodedMsg = new StringBuilder();
+		for (char ch : msg.toCharArray()) {
+			encodedMsg.append(codes.get(ch));
+		}
+		
+		// store codec
+		Map<String, String> decodingTable = invertHuffmanCodes(codes);
+		saveCodec(encodedMsg.toString(), decodingTable, filePath);
+	}
+	
+	public void encodeFileToFile(String msgFilePath, String encodedFilePath) throws IOException {
+		String msg = FileHandler.readFile(msgFilePath);
+		encodeStringToFile(msg, encodedFilePath);
+	}
+
 	private void saveCodec(String encodedMsg, Map<String, String> decodingTable, String filePath) throws IOException {
 		File file = new File(filePath);
 		FileOutputStream fileStream = new FileOutputStream(file);
@@ -90,29 +117,6 @@ public class Huffman {
 		
 		objStream.close();
 		fileStream.close();
-	}
-	
-	/**
-	 * Encodes a given String using a Huffman Coding
-	 * 
-	 * @param msg the string to encode
-	 * @return the encoded string
-	 * @throws IOException 
-	 */
-	public void encodeToFile(String msg, String filePath) throws IOException {
-		Map<Character, Integer> map = createFrequencyTable(msg);
-		Node tree = createHuffmanTree(map);
-		Map<Character, String> codes = getHuffmanCodes(tree);
-		
-		// create encoded message
-		StringBuilder encodedMsg = new StringBuilder();
-		for (char ch : msg.toCharArray()) {
-			encodedMsg.append(codes.get(ch));
-		}
-		
-		// store codec
-		Map<String, String> decodingTable = invertHuffmanCodes(codes);
-		saveCodec(encodedMsg.toString(), decodingTable, filePath);
 	}
 	
 	/**
@@ -171,29 +175,22 @@ public class Huffman {
 	
 	
 	
-	public static void main(String[] args) {
-		Huffman encoder = new Huffman();
-		String filePath = new File("test_enc.txt").getAbsolutePath();
-		String msg = "";
-		try {
-			msg = FileHandler.readFile("test.txt");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		try {
-			encoder.encodeToFile(msg, filePath);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		try {
-			String decodedMsg = encoder.decodeFile(filePath);
-			System.out.println(decodedMsg.equals(msg));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+//	public static void main(String[] args) {
+//		Huffman encoder = new Huffman();
+//		String filePath = new File("").getAbsolutePath();
+//
+//		try {
+//			String msg = FileHandler.readFile(filePath + "\\test.txt");
+//			
+//			encoder.encodeFileToFile(filePath + "\\test.txt", filePath + "\\test_enc.txt");
+//			String decodedMsg = encoder.decodeFile(filePath + "\\test_enc.txt");
+//			
+//			System.out.println(decodedMsg.equals(msg));
+//			
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 	
 	
 	
